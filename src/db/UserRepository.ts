@@ -1,4 +1,4 @@
-import mysql from 'mysql2/promise';
+import mysql, { Connection } from 'mysql2/promise';
 
 interface AuthData {
     host: string;
@@ -8,12 +8,13 @@ interface AuthData {
 }
 
 export class UserRepository {
-    private connection: mysql.Connection;
+    private connection: Connection;
 
-    constructor(authData: AuthData) {
-        mysql.createConnection(authData).then(conn => {
-            this.connection = conn;
-        });
+    private constructor(connection: Connection) { this.connection = connection;}
+
+    public static async createInstance(authData: AuthData): Promise<UserRepository> {
+        const connection = await mysql.createConnection(authData);
+        return new UserRepository(connection);
     }
 
     async create(username: string, passwordHash: string, displayName?: string, profilePicture?: string): Promise<void> {
@@ -23,7 +24,7 @@ export class UserRepository {
 
     async getById(userId: number): Promise<any> {
         const query = "SELECT * FROM Users WHERE user_id = ?";
-        const [rows] = await this.connection.execute(query, [userId]);
+        const [rows]: [any[], any] = await this.connection.execute(query, [userId]);
         return rows[0];
     }
 
